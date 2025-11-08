@@ -23,3 +23,23 @@ output "ec2_security_groups" {
   value       = aws_instance.foo.vpc_security_group_ids
   description = "Security groups da instância EC2"
 }
+
+output "backend_s3_bucket" {
+  value       = aws_s3_bucket.terraform_state.bucket
+  description = "Nome do bucket S3 para backend do Terraform"
+}
+
+output "backend_dynamodb_table" {
+  value       = aws_dynamodb_table.terraform_locks.name
+  description = "Nome da tabela DynamoDB para locks do Terraform"
+}
+
+output "web_sg_id" {
+  value       = aws_security_group.web_sg.id
+  description = "ID do Security Group Web"
+}
+
+output "db_sg_id" {
+  value       = aws_security_group.db_sg.id
+  description = "ID do Security Group Database"
+}
