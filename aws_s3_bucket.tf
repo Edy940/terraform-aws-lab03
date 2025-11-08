@@ -1,11 +1,7 @@
 resource "aws_s3_bucket" "mybucket" {
-  bucket = "mybucket-lab03-cicd-test-${formatdate("YYYYMMDDhhmmss", timestamp())}"
+  bucket = "mybucket-lab03-cicd-${var.env}"
 
   tags = {
-    environment = "dev"
-  }
-  
-  lifecycle {
-    ignore_changes = [bucket]
+    environment = var.env
   }
 }
