@@ -1,7 +1,7 @@
 resource "aws_s3_bucket" "mybucket" {
-  bucket = "mybucket-lab03-20251108013323"
+  bucket = "mybucket-lab03-cicd-${var.env}"
 
   tags = {
-    environment = "dev"
+    environment = var.env
   }
 }
