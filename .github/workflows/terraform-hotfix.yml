@@ -1,0 +1,91 @@
+name: Terraform Hotfix Deploy
+
+on:
+  push:
+    branches:
+      - 'hotfix/**'
+
+jobs:
+  hotfix-deploy:
+    name: Hotfix Emergency Deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -var="env=prod" -var="name=lab03-prod" -out=tfplan
+
+      - name: Create Issue for Hotfix Approval
+        uses: actions/github-script@v7
+        id: create-issue
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Hotfix Deployment Approval Required - ${context.ref}`,
+              body: `## Hotfix Deployment Request
+              
+              **Branch:** ${context.ref}
+              **Commit:** ${context.sha}
+              **Author:** @${context.actor}
+              
+              ### Terraform Plan
+              See workflow run for details: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+              
+              **Please review and approve this deployment by commenting:** \`/approve\`
+              **To reject:** \`/reject\`
+              `,
+              labels: ['hotfix', 'deployment', 'urgent']
+            });
+            return issue.data.number;
+
+      - name: Wait for Approval
+        run: |
+          echo "⏳ Waiting for manual approval in issue #${{ steps.create-issue.outputs.result }}"
+          echo "Please review the plan and approve the deployment."
+          
+      - name: Manual Approval Gate
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ github.actor }}
+          minimum-approvals: 1
+          issue-title: "Hotfix Deployment Approval"
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+
+      - name: Comment on Issue
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.create-issue.outputs.result }},
+              body: '✅ Hotfix deployed successfully!'
+            });
