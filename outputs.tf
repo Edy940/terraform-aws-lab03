@@ -33,3 +33,13 @@ output "backend_dynamodb_table" {
   value       = aws_dynamodb_table.terraform_locks.name
   description = "Nome da tabela DynamoDB para locks do Terraform"
 }
+
+output "web_sg_id" {
+  value       = aws_security_group.web_sg.id
+  description = "ID do Security Group Web"
+}
+
+output "db_sg_id" {
+  value       = aws_security_group.db_sg.id
+  description = "ID do Security Group Database"
+}
